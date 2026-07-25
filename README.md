@@ -1,8 +1,22 @@
 # Performance Skill
 
-Coding-agent skills for rigorous, cross-platform .NET performance engineering.
+A single, modular coding-agent skill for rigorous cross-platform .NET performance engineering.
 
-The repository combines managed runtime diagnostics with each operating system's native performance stack:
+The repository exposes one installable skill through [`SKILL.md`](./SKILL.md). Detailed procedures are supporting references loaded by the agent only when relevant:
+
+```text
+SKILL.md
+references/
+  core-workflow.md
+  macos.md
+  windows.md
+  linux.md
+  gpu-rendering.md
+```
+
+This keeps the skill readable and context-efficient without splitting it into separate skills.
+
+## Coverage
 
 | Layer | macOS | Windows | Linux |
 |---|---|---|---|
@@ -10,93 +24,52 @@ The repository combines managed runtime diagnostics with each operating system's
 | Native/system CPU | Instruments / `xcrun xctrace` | WPR/WPA, ETW, PerfView | `perf`, eBPF |
 | Native memory | Instruments Allocations, Leaks, VM Tracker | WPA heap/memory, WinDbg, PerfView | heaptrack, allocator profilers, `/proc`, eBPF |
 | Scheduling and waits | Instruments System Trace | WPA precise CPU and wait analysis | `perf sched`, off-CPU eBPF tools |
-| Graphics/GPU | Metal System Trace, Metal Debugger, GPU counters | WPR/WPA, PIX, GPUView, PresentMon | RenderDoc and vendor profilers |
-| Vendor GPU analysis | Apple Metal tools | PIX, NVIDIA Nsight, AMD RGP, Intel GPA | NVIDIA Nsight, AMD RGP, Intel GPA |
-
-## Skill files
-
-### General .NET performance
-
-[`SKILL.md`](./SKILL.md) contains the complete cross-platform workflow for:
-
-- CPU and native CPU profiling;
-- managed and native memory analysis;
-- allocation and GC investigations;
-- thread scheduling, contention, startup, I/O, and UI responsiveness;
-- initial graphics and GPU classification;
-- repeatable before/after validation.
-
-### GPU performance
-
-[`gpu-performance/SKILL.md`](./gpu-performance/SKILL.md) is the dedicated GPU companion skill for:
-
-- Metal, Direct3D 11/12, Vulkan, OpenGL, and WebGPU;
-- Avalonia, Skia, WPF, WinUI, MAUI, and custom .NET renderers;
-- CPU/GPU frame decomposition and frame-pacing analysis;
-- application markers and asynchronous GPU timestamp queries;
-- Metal Debugger, GPU captures, Metal counters, and `xctrace`;
-- WPR/WPA, PIX, GPUView, PresentMon, DXGI, DWM, and video-memory analysis;
-- RenderDoc, NVIDIA Nsight Graphics, AMD Radeon GPU Profiler, and Intel GPA;
-- shader occupancy, divergence, bandwidth, cache, and stall analysis;
-- queue synchronization, barriers, uploads, residency, and resource lifetime;
-- WebGPU/wgpu-native backend correlation;
-- p50/p95/p99 frame, GPU-pass, presentation, hitch, and missed-deadline validation.
-
-The GPU skill references the general skill and expects agents to combine managed, native, driver, compositor, and GPU evidence instead of diagnosing from GPU utilization alone.
+| Graphics/GPU | Metal Debugger, Metal System Trace, GPU counters | PIX, GPUView, WPA, PresentMon, vendor tools | RenderDoc, Nsight, RGP, Intel GPA, Vulkan tooling |
+| APIs/frameworks | Metal, WebGPU, Skia, Avalonia | D3D11/12, DXGI, WebGPU, WPF, WinUI, Avalonia | Vulkan, OpenGL, WebGPU, Wayland/X11, Avalonia |
 
 ## Installation
 
-Copy or link this repository into the skills directory used by your coding agent. The exact location depends on the agent host.
-
-A common layout is:
+Copy or link this repository into the skills directory used by the coding agent. A common layout is:
 
 ```text
 <agent-skills-directory>/dotnet-performance/SKILL.md
-<agent-skills-directory>/dotnet-performance/gpu-performance/SKILL.md
 ```
 
-The skills do not require helper binaries from this repository and can be applied to an existing .NET codebase without changing that codebase first. For serious graphics investigations, the GPU skill may direct the agent to add low-overhead semantic markers and asynchronous timestamp-query instrumentation to the target application.
+Keep the `references` directory beside `SKILL.md` so relative links remain valid.
 
 ## Intended prompts
-
-Examples:
 
 ```text
 Profile this .NET application and find the dominant CPU bottleneck.
 ```
 
 ```text
-Investigate why RSS keeps growing while the managed heap appears stable.
+Investigate why RSS grows while the managed heap stays stable.
 ```
 
 ```text
-Compare Avalonia rendering performance on macOS, Windows, and Linux.
+Profile this WebGPU renderer end-to-end and prove whether it is CPU, driver, GPU, compositor, or presentation bound.
 ```
 
 ```text
-Determine whether this WebGPU renderer is CPU-bound, driver-bound, GPU-bound, or presentation-bound.
+Compare Avalonia frame pacing and GPU memory behavior on macOS, Windows, and Linux.
 ```
 
 ```text
-Capture Metal, D3D12, and Vulkan frame evidence, identify the dominant pass or synchronization bubble, implement the highest-leverage fix, and validate it.
-```
-
-```text
-Profile shader, upload, queue, residency, and presentation costs and report p50/p95/p99 frame-time improvements.
+Capture startup, steady-state, and frame-time evidence, implement the highest-leverage fix, and validate it.
 ```
 
 ## Design principles
 
+- One skill with selectively loaded supporting references.
 - Evidence before optimization.
 - Portable EventPipe evidence plus OS-native traces.
-- Explicit separation of managed, native, kernel, driver, compositor, and GPU costs.
-- GPU timestamps and profiler captures before assigning pass or shader cost.
+- Explicit separation of managed, native, kernel, driver, GPU, compositor, and display costs.
 - Reproducible workloads and exact profiler commands.
-- Before/after validation using the same environment.
+- Before/after validation using equivalent conditions.
 - Tail latency and frame-time distributions, not averages alone.
-- Raw trace preservation and transparent reporting of profiler limitations.
-- Final validation outside replay, capture, validation-layer, and hardware-counter modes.
+- Raw artifact preservation and transparent profiler limitations.
 
 ## License
 
-No license file has been added by this change. Add the repository's intended license before redistributing the skills as packaged components.
+No license file currently exists. Add the intended license before redistributing the skill as a packaged component.
