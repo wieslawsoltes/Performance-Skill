@@ -8,7 +8,7 @@ description: Evidence-first performance engineering workflow for coding agents c
 
 Use this skill when investigating, explaining, fixing, benchmarking, or validating the performance of a .NET application, including ASP.NET Core, services, console applications, Avalonia, WPF, WinUI, MAUI, Skia, WebGPU, game/graphics engines, NativeAOT, and native-interoperability workloads.
 
-This repository defines one skill. `SKILL.md` is the routing and policy entry point; detailed operational procedures live in supporting reference documents. Load only the references required by the current investigation, then expand when evidence crosses an ownership boundary.
+This repository defines one skill. `SKILL.md` is the routing and policy entry point; detailed operational procedures live in a hierarchical reference tree. Load only the indexes and guides required by the current investigation, then expand when evidence crosses an ownership boundary.
 
 ## Non-negotiable rules
 
@@ -42,32 +42,19 @@ Never claim an improvement without before/after evidence from an equivalent work
 
 ## Reference router
 
-Always begin with [`references/core-workflow.md`](references/core-workflow.md) for experiment setup and first-level portable triage.
+Always begin with [`references/core/index.md`](references/core/index.md), then load only the domain indexes required by the question:
 
-Load additional references by question:
+- Managed CPU, allocation, GC, JIT, exceptions, ThreadPool, locks, async stacks, dumps: [`references/runtime/index.md`](references/runtime/index.md)
+- Managed/native/VM/mapped/GPU memory ownership and leak analysis: [`references/memory/index.md`](references/memory/index.md)
+- Contention, async latency, queues, backpressure, file/network/database I/O, UI dispatcher latency: [`references/latency/index.md`](references/latency/index.md)
+- Cold start, first frame/request, loader, JIT, ReadyToRun, trimming, single-file, NativeAOT: [`references/startup/index.md`](references/startup/index.md)
+- BenchmarkDotNet, micro/component/macro/load/soak benchmarks, async/concurrency benchmarks, JIT/AOT comparisons, disassembly, hardware counters, statistics, CI gates: [`references/benchmarking/index.md`](references/benchmarking/index.md)
+- Production, containers, diagnostic ports, `dotnet-monitor`, triggered collection, Kubernetes, artifact security: [`references/production/index.md`](references/production/index.md)
+- UI/rendering/GPU/WebGPU/Metal/D3D/Vulkan/OpenGL/shader/synchronization/presentation: [`references/gpu/index.md`](references/gpu/index.md)
 
-- Managed CPU, allocation, GC, JIT, exceptions, ThreadPool, locks, async stacks, dumps:
-  [`references/managed-runtime.md`](references/managed-runtime.md)
-- Managed/native/VM/mapped/GPU memory ownership and leak analysis:
-  [`references/memory.md`](references/memory.md)
-- Contention, async latency, queues, backpressure, file/network/database I/O, UI dispatcher latency:
-  [`references/concurrency-io-latency.md`](references/concurrency-io-latency.md)
-- Cold start, first frame/request, loader, JIT, ReadyToRun, trimming, single-file, NativeAOT:
-  [`references/startup-deployment.md`](references/startup-deployment.md)
-- BenchmarkDotNet, micro/component/macro/load/soak benchmarks, async and concurrency benchmarks, JIT/AOT comparisons, disassembly, hardware counters, statistics, CI regression gates, and before/after reports:
-  [`references/benchmarking-validation.md`](references/benchmarking-validation.md)
-- Production, containers, diagnostic ports, `dotnet-monitor`, triggered collection, Kubernetes, artifact security:
-  [`references/production-containers.md`](references/production-containers.md)
-- UI/rendering/GPU/WebGPU/Metal/D3D/Vulkan/OpenGL/shader/synchronization/presentation:
-  [`references/gpu-rendering.md`](references/gpu-rendering.md)
+Then load exactly one platform reference through [`references/platforms/index.md`](references/platforms/index.md).
 
-Then load exactly one platform reference for native/system evidence:
-
-- macOS: [`references/macos.md`](references/macos.md)
-- Windows: [`references/windows.md`](references/windows.md)
-- Linux: [`references/linux.md`](references/linux.md)
-
-Do not load every document by default. Select the minimum set that answers the current hypothesis, but do not stop at a boundary merely because another reference is required.
+Do not load every document by default. Select the minimum set that answers the current hypothesis, but do not stop at an ownership boundary merely because another guide is required.
 
 ## Fast triage sequence
 
