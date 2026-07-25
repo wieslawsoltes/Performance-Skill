@@ -30,7 +30,7 @@ This keeps the skill readable and context-efficient without splitting it into se
 | Memory | Managed retention, native heaps, VM mappings, RSS/PSS/private memory, LOH, pinning, finalization, interop ownership, GPU residency |
 | Concurrency and latency | Async critical paths, starvation, contention, queues, backpressure, timers, file/network/database I/O, distributed tracing, UI dispatcher latency |
 | Startup and deployment | Cold/warm startup, first frame/request, loader, ReadyToRun, trimming, single-file, NativeAOT, first-use regressions |
-| Benchmarking | BenchmarkDotNet, application workload automation, paired runs, statistics, CI thresholds, validation reports |
+| .NET benchmarking | BenchmarkDotNet project/configuration, micro/component/macro/load/soak design, async and multithreaded benchmarks, allocations, disassembly, hardware counters, SIMD, JIT/PGO/R2R/AOT comparisons, paired runs, statistical interpretation, CI regression gates, and application validation |
 | Production | `dotnet-monitor`, diagnostic ports, containers, Kubernetes, triggered/bounded collection, permissions, privacy and artifact handling |
 | macOS | Instruments, `xcrun xctrace`, Time Profiler, System Trace, Allocations, Leaks, VM Tracker, `vmmap`, `footprint`, Metal System Trace |
 | Windows | WPR/WPA, ETW, PerfView, Visual Studio Profiler, WinDbg/SOS, native heap tools, PIX, GPUView, PresentMon |
@@ -66,6 +66,18 @@ Compare JIT, ReadyToRun, trimmed single-file, and NativeAOT startup behavior.
 ```
 
 ```text
+Create production-grade BenchmarkDotNet benchmarks for this hot path, inspect generated assembly and allocations, and validate the result in the real application.
+```
+
+```text
+Build a multithreaded benchmark for this queue and measure throughput, p99 latency, fairness, contention, and scaling by worker count.
+```
+
+```text
+Add stable CI performance regression gates with paired baseline/candidate runs and preserved raw BenchmarkDotNet artifacts.
+```
+
+```text
 Profile this WebGPU renderer end-to-end and prove whether it is CPU, driver, GPU, compositor, or presentation bound.
 ```
 
@@ -83,11 +95,11 @@ Implement the highest-leverage fix and validate it with equivalent before/after 
 - Evidence before optimization.
 - Portable EventPipe evidence plus OS-native traces.
 - Explicit separation of managed, native, kernel, scheduler, I/O, dependency, driver, GPU, compositor, and display costs.
-- Exact capture commands and analysis procedures, not conceptual checklists alone.
-- Reproducible workloads and raw artifact preservation.
+- Exact capture and benchmark commands with analysis procedures, not conceptual checklists alone.
+- Reproducible inputs, workloads, and raw artifact preservation.
 - Before/after validation using equivalent conditions.
-- Tail latency, frame-time distributions, memory slopes, and queueing—not averages alone.
-- Transparent reporting of profiler overhead, symbol quality, permissions, and uncertainty.
+- Tail latency, frame-time distributions, memory slopes, queueing, and benchmark variance—not averages alone.
+- Transparent reporting of profiler overhead, symbol quality, permissions, benchmark noise, and uncertainty.
 
 ## License
 
