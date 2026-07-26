@@ -1,6 +1,6 @@
 # macOS profiling with Instruments and `xctrace`
 
-Use this reference for native CPU, scheduling, waits, wakeups, virtual memory, allocations, leaks, filesystem/network activity, Metal, compositor, energy, and driver behavior. Correlate with EventPipe for managed attribution.
+Use this reference for native CPU, scheduling, waits, wakeups, virtual memory, allocations, leaks, filesystem/network activity, Metal, compositor, energy, and driver behavior. Correlate with EventPipe for managed attribution. Consult the verified [`../command-reference.md`](../command-reference.md) before copying commands.[^command-reference]
 
 ## Prerequisites and environment capture
 
@@ -9,7 +9,8 @@ sw_vers
 uname -a
 uname -m
 xcode-select -p
-xcrun xctrace version
+xcodebuild -version
+xcrun xctrace help
 system_profiler SPHardwareDataType SPDisplaysDataType
 ```
 
@@ -28,7 +29,7 @@ xcrun xctrace list templates
 xcrun xctrace list devices
 ```
 
-Template names and capabilities vary by Xcode/macOS version. Use the exact installed name and record it.
+Template names and capabilities vary by Xcode/macOS version. Use the exact installed name and record it.[^xctrace]
 
 ## Time Profiler: launch
 
@@ -39,7 +40,7 @@ xcrun xctrace record \
   --template "Time Profiler" \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch -- ./App
+  --launch ./App
 ```
 
 Framework-dependent executable:
@@ -49,7 +50,7 @@ xcrun xctrace record \
   --template "Time Profiler" \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch -- dotnet exec ./App.dll
+  --launch dotnet exec ./App.dll
 ```
 
 For an `.app` bundle, launch the actual bundle executable or use Instruments interactively when bundle environment, entitlements, or activation behavior matters.
@@ -139,7 +140,7 @@ xcrun xctrace record \
   --template "Allocations" \
   --time-limit 60s \
   --output artifacts/performance/macos/allocations.trace \
-  --launch -- ./App
+  --launch ./App
 ```
 
 Attach:
@@ -173,7 +174,7 @@ xcrun xctrace record \
   --template "Leaks" \
   --time-limit 60s \
   --output artifacts/performance/macos/leaks.trace \
-  --launch -- ./App
+  --launch ./App
 ```
 
 Treat reported leaks as candidates. Verify application ownership, framework caches, one-time initialization, process shutdown behavior, and whether the allocation remains reachable intentionally.
@@ -190,7 +191,7 @@ footprint <PID> > artifacts/performance/macos/footprint.txt
 ps -o pid,rss,vsz,%mem,command -p <PID>
 ```
 
-If permitted, repeat `vmmap`/`footprint` at defined workload points.
+If permitted, repeat `vmmap`/`footprint` at defined workload points.[^vmmap][^footprint]
 
 Distinguish:
 
@@ -228,7 +229,7 @@ Add `os_signpost`/Points of Interest through a native shim or supported binding 
 - present;
 - cache warm-up.
 
-Use stable names and IDs so Instruments can correlate application intervals with CPU, scheduling, Metal, and VM timelines. Keep instrumentation behind a runtime switch and measure its overhead.
+Use stable names and IDs so Instruments can correlate application intervals with CPU, scheduling, Metal, and VM timelines. Keep instrumentation behind a runtime switch and measure its overhead.[^signposts]
 
 ## Metal System Trace
 
@@ -239,7 +240,7 @@ xcrun xctrace record \
   --template "Metal System Trace" \
   --time-limit 30s \
   --output artifacts/performance/macos/metal-system.trace \
-  --launch -- ./App
+  --launch ./App
 ```
 
 Inspect:
@@ -255,7 +256,7 @@ Inspect:
 - shader/pipeline compilation;
 - device utilization, power, and throttling where exposed.
 
-Use a Metal GPU frame capture for API/resource/pipeline/shader analysis of a representative frame. Use the dedicated GPU reference for the full workflow.
+Use a Metal GPU frame capture for API/resource/pipeline/shader analysis of a representative frame. Use the dedicated GPU reference for the full workflow.[^metal]
 
 ## Symbols
 
@@ -271,16 +272,17 @@ Verify architecture and UUID match before trusting symbolized stacks. Managed JI
 
 ## Export and automation
 
-`xctrace export` can export tables/TOC from trace files. Inspect help and the trace schema for the installed Xcode:
+`xctrace export` can export tables or the table of contents from trace files. Inspect the installed help and trace schema:
 
 ```bash
-xcrun xctrace export --help
+xcrun xctrace help export
 xcrun xctrace export \
-  --input artifacts/performance/macos/cpu.trace \
-  --toc > artifacts/performance/macos/cpu-toc.xml
+  artifacts/performance/macos/cpu.trace \
+  --toc \
+  --output artifacts/performance/macos/cpu-toc.xml
 ```
 
-Do not hard-code XPath/table assumptions across Xcode versions. Store the raw `.trace` bundle as the source artifact.
+The trace path is positional. Do not use an undocumented `--input` option. Do not hard-code XPath/table assumptions across Xcode versions. Store the raw `.trace` bundle as the source artifact.[^xctrace]
 
 ## Common macOS misdiagnoses
 
@@ -295,3 +297,13 @@ Do not hard-code XPath/table assumptions across Xcode versions. Store the raw `.
 ## Validation
 
 Repeat the same workload, process architecture, display, scale factor, refresh rate, power mode, window state, and profiler configuration. Report CPU, waits/wakeups, native persistent bytes, VM footprint, GPU/present timing, and profiler overhead before and after.
+
+## Documentation footnotes
+
+[^command-reference]: [`../command-reference.md`](../command-reference.md).
+[^xctrace]: Apple/Xcode manual mirror, [`xctrace(1)`](https://keith.github.io/xcode-man-pages/xctrace.1.html); verify against `xcrun xctrace help` from the installed Xcode.
+[^vmmap]: Apple, [`vmmap(1)`](https://keith.github.io/xcode-man-pages/vmmap.1.html).
+[^footprint]: Apple, [`footprint(1)`](https://keith.github.io/xcode-man-pages/footprint.1.html).
+[^signposts]: Apple, [recording performance data with Points of Interest](https://developer.apple.com/documentation/os/logging/recording-performance-data).
+[^metal]: Apple, [Metal debugger](https://developer.apple.com/documentation/xcode/metal-debugger).
+[^dotnet-trace]: Microsoft, [`dotnet-trace`](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace).
