@@ -8,21 +8,22 @@ description: Evidence-first performance engineering workflow for coding agents c
 
 Use this skill when investigating, explaining, fixing, benchmarking, or validating the performance of a .NET application, including ASP.NET Core, services, console applications, Avalonia, WPF, WinUI, MAUI, Skia, WebGPU, game/graphics engines, NativeAOT, and native-interoperability workloads.
 
-This repository defines one skill. `SKILL.md` is the routing and policy entry point; detailed operational procedures live in a hierarchical reference tree. Load only the indexes and guides required by the current investigation, then expand when evidence crosses an ownership boundary.
+This repository defines one skill. `SKILL.md` is the policy and routing entry point; detailed operational procedures live in a hierarchical reference tree. Load only the indexes and chapters required by the current investigation, then expand when evidence crosses an ownership boundary.
 
 ## Non-negotiable rules
 
-- Profile and benchmark an optimized build, normally `Release`, and the real deployment form.
-- Record commit, dirty state, SDK/runtime, OS, architecture, hardware, power mode, workload, profiler/benchmark versions, and exact commands.
+- Profile and benchmark an optimized build, normally `Release`, in the real deployment form.
+- Record commit and dirty state, SDK/runtime, OS, architecture, hardware, power mode, workload, tool versions, environment overrides, and exact commands.
 - Establish a deterministic reproduction before changing code.
 - Separate cold startup, first use, warm steady state, overload, drain, and shutdown.
 - Warm tiered compilation, shaders, pipelines, caches, and pools unless cold behavior is the subject.
-- Collect evidence at every relevant ownership boundary: managed runtime, native library, kernel, filesystem/network, driver, GPU, compositor, and display.
+- Collect evidence at every relevant ownership boundary: managed runtime, native library, kernel, scheduler, filesystem/network, dependency, driver, GPU, compositor, and display.
 - Do not infer managed retention from RSS alone.
 - Do not infer GPU saturation from high frame time, GPU API usage, or utilization alone.
 - Do not claim a fix from one average, one trace, one frame capture, one microbenchmark, or the fastest benchmark run.
 - Preserve raw artifacts and report missing symbols, dropped events, profiler overhead, environmental variance, and uncertainty.
 - Protect secrets and personal data in dumps, traces, logs, SQL spans, packet captures, and benchmark input corpora.
+- Treat command examples as version-sensitive. Query installed tool help and prefer current official profile names and options.
 
 ## Required investigation output
 
@@ -34,7 +35,7 @@ Report:
 4. **Evidence** — counters, traces, captures, dumps, benchmark distributions, and measurements.
 5. **Ownership** — managed CPU, runtime, native CPU, kernel, scheduler, I/O, dependency, memory, driver, GPU, compositor, or display.
 6. **Dominant cause** — largest supported cost, wait, or fastest-growing resource.
-7. **Fix** — smallest high-leverage code/configuration change.
+7. **Fix** — smallest high-leverage code or configuration change.
 8. **Validation** — equivalent before/after runs with spread and tail metrics.
 9. **Residual risks** — unresolved bottlenecks and measurement limits.
 
@@ -42,7 +43,9 @@ Never claim an improvement without before/after evidence from an equivalent work
 
 ## Reference router
 
-Always begin with [`references/core/index.md`](references/core/index.md), then load only the domain indexes required by the question:
+Always begin with [`references/index.md`](references/index.md) and [`references/core/index.md`](references/core/index.md).
+
+Load additional domain indexes by question:
 
 - Managed CPU, allocation, GC, JIT, exceptions, ThreadPool, locks, async stacks, dumps: [`references/runtime/index.md`](references/runtime/index.md)
 - Managed/native/VM/mapped/GPU memory ownership and leak analysis: [`references/memory/index.md`](references/memory/index.md)
@@ -52,14 +55,14 @@ Always begin with [`references/core/index.md`](references/core/index.md), then l
 - Production, containers, diagnostic ports, `dotnet-monitor`, triggered collection, Kubernetes, artifact security: [`references/production/index.md`](references/production/index.md)
 - UI/rendering/GPU/WebGPU/Metal/D3D/Vulkan/OpenGL/shader/synchronization/presentation: [`references/gpu/index.md`](references/gpu/index.md)
 
-Then load exactly one platform reference through [`references/platforms/index.md`](references/platforms/index.md).
+Load every relevant platform reference through [`references/platforms/index.md`](references/platforms/index.md). A single-host investigation usually needs one platform document; cross-platform comparisons and remote/client-server scenarios may require several.
 
 Do not load every document by default. Select the minimum set that answers the current hypothesis, but do not stop at an ownership boundary merely because another guide is required.
 
 ## Fast triage sequence
 
 1. Build and run the production-equivalent configuration.
-2. Define workload phases and success metrics.
+2. Define workload phases, success metrics, and a stopping rule.
 3. Record `System.Runtime` counters plus process CPU and total memory.
 4. Capture managed CPU/runtime evidence with `dotnet-trace` when managed ownership is plausible.
 5. Capture repeated stacks when progress, starvation, or blocking is suspected.
@@ -67,9 +70,9 @@ Do not load every document by default. Select the minimum set that answers the c
 7. For memory, compare managed live bytes, GC commitment, private/RSS/PSS, native allocations, mappings, graphics allocations, and GPU residency.
 8. For rendering, correlate application markers, CPU submission, GPU timestamps, native GPU capture, present, compositor, and display timing.
 9. For benchmark requests, choose micro, component, macro, load, or soak methodology before selecting BenchmarkDotNet or another harness.
-10. For production-only incidents, use bounded/triggered collection and record cgroup/host constraints.
+10. For production-only incidents, use bounded or triggered collection and record cgroup/host constraints.
 11. Implement only after evidence supports the dominant cause.
-12. Repeat the identical workload and publish median/spread/tail values plus raw artifacts.
+12. Repeat the identical workload and publish median, spread, tail values, and raw artifacts.
 
 ## Ownership tests
 
@@ -96,7 +99,7 @@ Do not load every document by default. Select the minimum set that answers the c
 - Analyze inclusive costs first, then exclusive costs, callees, waits, queueing, synchronization, and ownership.
 - Modify code only after the dominant cause is supported.
 - Add a benchmark, regression budget, telemetry marker, trace recipe, or lifetime invariant that prevents recurrence.
-- Keep large trace/capture/dump/benchmark artifact binaries out of Git unless repository policy explicitly stores them.
+- Keep large trace, capture, dump, and benchmark artifacts out of Git unless repository policy explicitly stores them.
 - Validate failure, cancellation, overload, cleanup, device-loss, and shutdown paths—not only the happy path.
 
 ## Invalid conclusions to reject
