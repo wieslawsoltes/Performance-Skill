@@ -1,6 +1,6 @@
 # Managed runtime CPU, GC, allocation, JIT, and exception profiling
 
-Use this reference when the dominant cost may be inside managed code or the CLR. Combine it with the platform reference whenever native frames, scheduling, kernel activity, or total-process ownership matter.
+Use this reference when the dominant cost may be inside managed code or the CLR. Combine it with the relevant platform reference whenever native frames, scheduling, kernel activity, or total-process ownership matter.
 
 ## Tool discovery and version pinning
 
@@ -18,7 +18,7 @@ dotnet tool install dotnet-symbol
 dotnet tool list
 ```
 
-Record tool versions beside every artifact. Do not assume syntax or built-in profiles are identical across tool versions.
+Record tool versions beside every artifact. Do not assume syntax or built-in profiles are identical across versions.
 
 ## Process discovery and diagnostics availability
 
@@ -32,7 +32,8 @@ When attach fails, check:
 
 - target and tool run as compatible users;
 - diagnostics have not been disabled;
-- diagnostic socket/pipe permissions;
+- diagnostic socket or pipe permissions;
+- on Linux/macOS, the tool and target share `TMPDIR`;
 - container PID namespace visibility;
 - architecture compatibility;
 - process lifetime and whether the wrong `dotnet` child was selected.
@@ -56,39 +57,44 @@ dotnet-counters collect \
 
 At minimum inspect correlated trends for:
 
-- process CPU;
-- working set;
-- GC heap size;
-- allocation rate;
-- Gen 0/1/2 collection counts;
-- time in GC;
-- LOH size where exposed;
+- process CPU and working set;
+- GC heap size, committed bytes, allocation rate, and Gen 0/1/2 counts;
+- time in GC and LOH size where exposed;
 - exception rate;
-- ThreadPool thread count;
-- ThreadPool queue length;
-- completed work-item rate;
+- ThreadPool thread count, queue length, and completed-work rate;
 - monitor lock contention.
 
 Interpret rates over meaningful intervals. A one-second spike is not equivalent to sustained pressure.
 
 ## Managed CPU sampling
 
-Attach to a warm process:
+Attach to a warm process using the current standard profiles:
 
 ```bash
 dotnet-trace collect \
   --process-id <PID> \
-  --profile cpu-sampling \
-  --duration 00:00:30 \
-  --format Speedscope \
-  --output artifacts/performance/runtime/cpu.speedscope.json
+  --profile dotnet-common,dotnet-sampled-thread-time \
+  --duration 00:00:00:30 \
+  --output artifacts/performance/runtime/cpu.nettrace
 ```
+
+Export a Speedscope view only as a derived artifact when useful:
+
+```bash
+dotnet-trace convert \
+  --format Speedscope \
+  --output artifacts/performance/runtime/cpu \
+  artifacts/performance/runtime/cpu.nettrace
+```
+
+The historical `cpu-sampling` profile was removed from standard `dotnet-trace collect`. It remains valid for the separate Linux `collect-linux` perf-based workflow.
 
 Launch for startup or short-lived workloads:
 
 ```bash
 dotnet-trace collect \
-  --profile cpu-sampling \
+  --profile dotnet-common,dotnet-sampled-thread-time \
+  --duration 00:00:00:30 \
   --show-child-io \
   --output artifacts/performance/runtime/startup.nettrace \
   -- dotnet exec ./App.dll
@@ -101,22 +107,28 @@ Analysis procedure:
 3. inspect inclusive cost first;
 4. expand callers and callees;
 5. separate application frames, runtime/JIT/GC frames, framework code, and P/Invoke transitions;
-6. verify whether a hot frame is repeated useful work, spin/polling, exception handling, allocation helper activity, or blocked-stack sampling noise;
+6. distinguish useful work, spin/polling, exception handling, allocation helpers, and sampling artifacts;
 7. correlate with process CPU and platform-native stacks.
 
 Sampling answers where CPU time was observed. It does not provide exact call counts or exact per-call cost.
 
 ## Runtime event tracing
 
-Use built-in profiles when available. Before using provider masks, inspect the installed tool help and current runtime provider documentation.
+Use built-in profiles when available and inspect current help before using custom provider masks:
 
 ```bash
 dotnet-trace collect --help
 ```
 
-A general runtime trace can include GC, JIT, loader, exception, contention, and ThreadPool events. Keep duration and buffer size bounded; high-volume allocation events can perturb the workload and produce very large files.
+Useful current profiles include:
 
-Store raw `.nettrace` files even when also converting to Speedscope. Conversion may discard event classes needed later.
+- `dotnet-common` for lightweight GC, loader, JIT, exception, and threading events;
+- `dotnet-sampled-thread-time` for managed stack sampling;
+- `gc-collect` for low-overhead GC collections;
+- `gc-verbose` for GC plus sampled allocations;
+- `database` for supported ADO.NET and Entity Framework commands.
+
+Keep duration and buffers bounded. Allocation-heavy traces can perturb the workload and become very large. Store raw `.nettrace` files even when also exporting stacks or reports.
 
 ## Allocation profiling
 
@@ -124,16 +136,16 @@ Use three layers:
 
 1. allocation rate from counters;
 2. sampled allocation stacks from runtime traces or a managed profiler;
-3. live-object/retention evidence from GC dumps or full dumps.
+3. live-object and retention evidence from GC dumps or full dumps.
 
 Questions to answer:
 
 - Which types allocate the most bytes and objects?
 - Which call stacks allocate them?
 - Are allocations transient or promoted?
-- Do objects survive Gen 2/full collections?
+- Do objects survive Gen 2 or equivalent full collections?
 - Is LOH or pinned-object pressure involved?
-- Is allocation caused by boxing, iterator/state-machine creation, closures, strings, arrays, serialization, reflection, or interop wrappers?
+- Is allocation caused by boxing, iterators/state machines, closures, strings, arrays, serialization, reflection, or interop wrappers?
 
 Do not infer retention from allocation volume. A type may dominate allocation traffic while leaving no live objects.
 
@@ -154,7 +166,7 @@ Typical classifications:
 
 - frequent Gen 0 with low pause: throughput cost from transient allocation;
 - frequent Gen 1/2: promotion, insufficient ephemeral space, or retained graphs;
-- long blocking Gen 2: large live set, fragmentation, pinning, memory pressure, or heap hard limits;
+- long blocking Gen 2: large live set, fragmentation, pinning, pressure, or heap limits;
 - high time in GC with moderate allocation: expensive scanning/promotion or constrained heap configuration;
 - large committed heap with small live bytes: fragmentation, retained segments, heap policy, or delayed decommit—not automatically a leak.
 
@@ -162,12 +174,9 @@ When server GC is enabled, inspect each heap and NUMA/CPU topology rather than o
 
 ## JIT, tiering, ReadyToRun, and dynamic PGO
 
-Separate cold and warm behavior.
+Separate cold and warm behavior. Capture:
 
-Capture:
-
-- method JIT compilation duration;
-- number and size of compiled methods;
+- method compilation duration and compiled code size;
 - tier transitions;
 - ReadyToRun usage versus JIT fallback;
 - generic instantiation and reflection-heavy paths;
@@ -175,7 +184,7 @@ Capture:
 - code-cache growth;
 - first-call latency for hot paths.
 
-A valid comparison may need these variants:
+Example deployment variants:
 
 ```bash
 # framework-dependent baseline
@@ -188,34 +197,24 @@ dotnet publish -c Release -r <RID> -p:PublishReadyToRun=true
 dotnet publish -c Release -r <RID> -p:PublishAot=true
 ```
 
-Do not disable tiering or PGO merely to simplify a trace unless the experiment explicitly studies those features. If environment variables are changed, record them and restore production defaults for final validation.
+Do not disable tiering or PGO merely to simplify a trace unless the experiment explicitly studies those features. Record every environment override and restore production defaults for final validation.
 
 ## Exceptions
 
-High exception rates can dominate CPU and allocation while remaining hidden in normal logs.
-
-Investigate:
+High exception rates can dominate CPU and allocation while remaining hidden in normal logs. Investigate:
 
 - first-chance exception type and throw stack;
 - repeated parse/probe/fallback exceptions;
 - cancellation exceptions on hot paths;
 - exception-based feature detection;
 - retries that repeatedly construct exceptions;
-- logging and stack formatting cost.
+- logging and stack-formatting cost.
 
-Do not remove exceptions required for correctness. Replace exception-driven expected control flow with explicit tests only when semantics remain equivalent.
+Do not remove exceptions required for correctness. Replace exception-driven expected control flow only when semantics remain equivalent.
 
 ## ThreadPool and work scheduling
 
-Correlate:
-
-- queue length;
-- worker-thread count;
-- work-item throughput;
-- CPU utilization;
-- task continuation stacks;
-- blocking calls;
-- timer and polling frequency.
+Correlate queue length, worker count, work-item throughput, CPU, continuations, blocking calls, and timer/polling frequency.
 
 Classification:
 
@@ -225,7 +224,7 @@ Classification:
 - sawtooth latency with thread injection: starvation recovery;
 - high timer/wakeup rate: polling or overly granular scheduling.
 
-Use repeated `dotnet-stack` snapshots to find persistent blockers:
+Use repeated stack snapshots to find persistent blockers:
 
 ```bash
 for i in 1 2 3 4 5; do
@@ -236,31 +235,13 @@ done
 
 ## Locks and contention
 
-Use runtime contention events plus platform scheduling evidence. Identify:
+Use runtime contention events plus platform scheduling evidence. Identify lock or synchronization identity where possible, owner/waiter stacks, hold duration, waiter count, nesting, convoying, reader/writer imbalance, global caches, allocator locks, and UI/render/worker synchronization.
 
-- lock address or synchronization object where possible;
-- owner and waiter stacks;
-- hold duration;
-- waiter count;
-- recursive or nested locking;
-- lock convoying;
-- reader/writer imbalance;
-- global caches or allocator locks;
-- synchronization across UI/render/worker threads.
-
-A hot `Monitor.Enter`, futex, semaphore, or kernel wait frame is an entry point, not the root cause. Find the owner and the protected work.
+A hot `Monitor.Enter`, futex, semaphore, or kernel-wait frame is an entry point, not the root cause. Find the owner and protected work.
 
 ## Async investigations
 
-Physical thread stacks do not always show the logical async chain. Correlate:
-
-- task scheduling and completion events;
-- Activity/trace identifiers;
-- request identifiers;
-- continuation scheduling delay;
-- ThreadPool queueing;
-- external I/O spans;
-- synchronization-context or dispatcher transitions.
+Physical thread stacks do not always show the logical async chain. Correlate task events, `Activity` identifiers, request IDs, continuation scheduling delay, ThreadPool queueing, external I/O spans, and dispatcher transitions.
 
 Look for:
 
@@ -269,7 +250,7 @@ Look for:
 - serial awaits that could safely overlap;
 - unbounded fan-out;
 - cancellation and timeout storms;
-- async state-machine allocation on very hot paths;
+- async state-machine allocation on hot paths;
 - continuations forced onto a busy UI thread.
 
 ## Dumps and SOS
@@ -300,7 +281,7 @@ gchandles
 finalizequeue
 ```
 
-Use `dotnet-symbol` or platform symbol tooling when the dump was collected elsewhere. Record runtime build identity and retain matching binaries.
+Use `dotnet-symbol` or platform symbol tooling when the dump was collected elsewhere. Record runtime build identity and retain matching binaries. Treat dumps as sensitive artifacts.
 
 ## Validation
 
@@ -315,4 +296,4 @@ After a fix, repeat the same workload and report:
 - ThreadPool queue and contention;
 - startup first-run and warm-run latency where relevant.
 
-A reduction in one runtime metric is not sufficient if total wall time, tail latency, native CPU, memory, or correctness regresses.
+A reduction in one runtime metric is not sufficient if total wall time, tail latency, native CPU, memory, diagnostics, or correctness regresses.
