@@ -9,6 +9,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+FENCED_BLOCK = re.compile(r"```(?P<language>[^\n]*)\n(?P<body>.*?)```", re.DOTALL)
+COMMAND_LANGUAGES = {
+    "",
+    "bash",
+    "console",
+    "powershell",
+    "pwsh",
+    "sh",
+    "shell",
+    "text",
+    "zsh",
+}
 LEGACY_PATHS = {
     "references/core-workflow.md",
     "references/managed-runtime.md",
@@ -65,6 +77,16 @@ FOOTNOTED_DOCUMENTS = {
 
 def fail(errors: list[str], message: str) -> None:
     errors.append(message)
+
+
+def command_blocks(text: str) -> str:
+    """Return executable-looking fenced blocks, excluding prose and source examples."""
+    blocks: list[str] = []
+    for match in FENCED_BLOCK.finditer(text):
+        language = match.group("language").strip().lower().split(maxsplit=1)[0]
+        if language in COMMAND_LANGUAGES:
+            blocks.append(match.group("body"))
+    return "\n".join(blocks)
 
 
 def validate_front_matter(errors: list[str]) -> None:
@@ -161,9 +183,10 @@ def validate_command_regressions(errors: list[str]) -> None:
     for path in sorted(ROOT.rglob("*.md")):
         relative = path.relative_to(ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
+        commands = command_blocks(text)
 
         for pattern, message in invalid_patterns.items():
-            if re.search(pattern, text):
+            if re.search(pattern, commands):
                 fail(errors, f"{message} in {relative}")
 
         if "No license file currently exists" in text:
