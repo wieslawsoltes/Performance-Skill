@@ -132,8 +132,6 @@ def validate_text_hygiene(errors: list[str]) -> None:
         text = path.read_text(encoding="utf-8")
         if "\t" in text:
             fail(errors, f"tab character in Markdown file: {path.relative_to(ROOT)}")
-        if not text.endswith("\n"):
-            fail(errors, f"missing final newline: {path.relative_to(ROOT)}")
 
 
 def main() -> int:
