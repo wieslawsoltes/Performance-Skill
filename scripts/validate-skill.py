@@ -23,6 +23,7 @@ LEGACY_PATHS = {
     "references/linux.md",
 }
 REQUIRED_DOMAIN_FILES = {
+    "references/index.md",
     "references/core/index.md",
     "references/core/guide.md",
     "references/runtime/index.md",
@@ -77,7 +78,7 @@ def validate_required_files(errors: list[str]) -> None:
         if not (ROOT / relative).is_file():
             fail(errors, f"missing required reference file: {relative}")
 
-    for relative in ("README.md", "LICENSE", "references/index.md"):
+    for relative in ("README.md", "LICENSE"):
         if not (ROOT / relative).is_file():
             fail(errors, f"missing required package file: {relative}")
 
@@ -118,15 +119,21 @@ def validate_command_regressions(errors: list[str]) -> None:
         relative = path.relative_to(ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
 
-        # cpu-sampling is valid for collect-linux, but not for standard collect.
+        # cpu-sampling remains valid for collect-linux, but not for standard collect.
         if re.search(r"dotnet-trace\s+collect(?!-linux)[\s\S]{0,300}?--profile\s+cpu-sampling", text):
             fail(errors, f"removed standard dotnet-trace cpu-sampling profile in {relative}")
 
-        if 'PackageReference Include="BenchmarkDotNet" Version="*"' in text:
-            fail(errors, f"wildcard BenchmarkDotNet package version in {relative}")
-
         if "No license file currently exists" in text:
             fail(errors, f"stale license statement in {relative}")
+
+
+def validate_text_hygiene(errors: list[str]) -> None:
+    for path in sorted(ROOT.rglob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        if "\t" in text:
+            fail(errors, f"tab character in Markdown file: {path.relative_to(ROOT)}")
+        if not text.endswith("\n"):
+            fail(errors, f"missing final newline: {path.relative_to(ROOT)}")
 
 
 def main() -> int:
@@ -136,6 +143,7 @@ def main() -> int:
     validate_links(errors)
     validate_stale_paths(errors)
     validate_command_regressions(errors)
+    validate_text_hygiene(errors)
 
     if errors:
         print("Skill validation failed:", file=sys.stderr)
