@@ -24,6 +24,7 @@ LEGACY_PATHS = {
 }
 REQUIRED_DOMAIN_FILES = {
     "references/index.md",
+    "references/command-reference.md",
     "references/core/index.md",
     "references/core/guide.md",
     "references/runtime/index.md",
@@ -44,6 +45,21 @@ REQUIRED_DOMAIN_FILES = {
     "references/platforms/macos.md",
     "references/platforms/windows.md",
     "references/platforms/linux.md",
+}
+FOOTNOTED_DOCUMENTS = {
+    "README.md",
+    "SKILL.md",
+    "references/index.md",
+    "references/command-reference.md",
+    "references/core/index.md",
+    "references/runtime/index.md",
+    "references/memory/index.md",
+    "references/latency/index.md",
+    "references/startup/index.md",
+    "references/benchmarking/index.md",
+    "references/production/index.md",
+    "references/gpu/index.md",
+    "references/platforms/index.md",
 }
 
 
@@ -114,14 +130,41 @@ def validate_stale_paths(errors: list[str]) -> None:
                 fail(errors, f"stale legacy path in {path.relative_to(ROOT)}: {legacy}")
 
 
+def validate_footnotes(errors: list[str]) -> None:
+    for relative in sorted(FOOTNOTED_DOCUMENTS):
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "## Documentation footnotes" not in text:
+            fail(errors, f"missing documentation footnotes section: {relative}")
+        if not re.search(r"^\[\^[^\]]+\]:\s+", text, re.MULTILINE):
+            fail(errors, f"missing Markdown footnote definitions: {relative}")
+
+
 def validate_command_regressions(errors: list[str]) -> None:
+    invalid_patterns = {
+        r"dotnet-trace\s+collect(?!-linux)[\s\S]{0,300}?--profile\s+cpu-sampling":
+            "removed standard dotnet-trace cpu-sampling profile",
+        r"xcrun\s+xctrace\s+version\b":
+            "undocumented xctrace version subcommand; use xcodebuild -version and xctrace help",
+        r"xcrun\s+xctrace\s+export[\s\\\r\n]+--input\b":
+            "invalid xctrace export --input form; trace path is positional",
+        r"perf\s+sched\s+record[\s\\\r\n]+-p\b":
+            "non-portable perf sched record -p form",
+        r"CoreRuntime\.Core100\b":
+            "invalid BenchmarkDotNet CoreRuntime.Core100 field",
+        r"runqlat(?:-bpfcc)?\s+30\b":
+            "assumed positional BCC runqlat duration; inspect the installed tool help",
+    }
+
     for path in sorted(ROOT.rglob("*.md")):
         relative = path.relative_to(ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
 
-        # cpu-sampling remains valid for collect-linux, but not for standard collect.
-        if re.search(r"dotnet-trace\s+collect(?!-linux)[\s\S]{0,300}?--profile\s+cpu-sampling", text):
-            fail(errors, f"removed standard dotnet-trace cpu-sampling profile in {relative}")
+        for pattern, message in invalid_patterns.items():
+            if re.search(pattern, text):
+                fail(errors, f"{message} in {relative}")
 
         if "No license file currently exists" in text:
             fail(errors, f"stale license statement in {relative}")
@@ -140,6 +183,7 @@ def main() -> int:
     validate_required_files(errors)
     validate_links(errors)
     validate_stale_paths(errors)
+    validate_footnotes(errors)
     validate_command_regressions(errors)
     validate_text_hygiene(errors)
 
