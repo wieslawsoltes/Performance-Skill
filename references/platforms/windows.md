@@ -1,33 +1,32 @@
 # Windows profiling with WPR/WPA, PerfView, Visual Studio, WinDbg, PIX, and GPUView
 
-Use this reference for system-wide ETW evidence, native and managed CPU, scheduling, waits, I/O, memory, loader activity, power, Direct3D, presentation, and combined native-managed debugging.
+Use this reference for system-wide ETW evidence, native and managed CPU, scheduling, waits, I/O, memory, loader activity, power, Direct3D, presentation, and combined native-managed debugging. Consult the verified [`../command-reference.md`](../command-reference.md) before copying commands.[^command-reference]
 
 ## Environment capture
 
+Create the artifact directory before redirecting command output:
+
 ```powershell
+New-Item -ItemType Directory -Force artifacts\performance\windows | Out-Null
 Get-ComputerInfo | Out-File artifacts\performance\windows\computer-info.txt
 Get-CimInstance Win32_Processor | Format-List * | Out-File artifacts\performance\windows\cpu.txt
 Get-CimInstance Win32_VideoController | Format-List * | Out-File artifacts\performance\windows\gpu.txt
 dotnet --info | Out-File artifacts\performance\windows\dotnet-info.txt
-wpr -version
+wpr -help
 wpr -profiles
 ```
 
-Record Windows build, ADK/WPT version, CPU topology, power plan, GPU/driver, process architecture, elevation, virtualization, and whether the application runs packaged, unpackaged, under a debugger, or through `dotnet.exe`.
-
-```powershell
-New-Item -ItemType Directory -Force artifacts\performance\windows | Out-Null
-```
+Record Windows build, ADK/WPT version, CPU topology, power plan, GPU/driver, process architecture, elevation, virtualization, and whether the application runs packaged, unpackaged, under a debugger, or through `dotnet.exe`.[^wpr]
 
 ## WPR general system trace
 
 ```powershell
 wpr -start GeneralProfile -filemode
-# reproduce deterministic workload
+# Reproduce the deterministic workload.
 wpr -stop artifacts\performance\windows\general.etl
 ```
 
-If `GeneralProfile` is not installed, select a suitable profile from `wpr -profiles`. Record the exact profile.
+If `GeneralProfile` is not installed, select a suitable profile from `wpr -profiles`. Record the exact profile and WPR version. WPR profile names depend on the installed Windows Performance Toolkit.[^wpr]
 
 Open in WPA:
 
@@ -35,7 +34,7 @@ Open in WPA:
 wpa artifacts\performance\windows\general.etl
 ```
 
-In WPA first establish the workload time range and exact process lifetime. Framework-dependent applications may appear as `dotnet.exe`; filter by PID, command line, start time, parent process, and image path.
+In WPA first establish the workload time range and exact process lifetime. Framework-dependent applications may appear as `dotnet.exe`; filter by PID, command line, start time, parent process, and image path.[^wpa]
 
 ## CPU sampling and precise scheduling
 
@@ -95,11 +94,11 @@ PerfView is particularly useful for:
 - heap snapshots and retention;
 - ETW event correlation.
 
-Keep the raw ETL/ETL.ZIP. Exported reports do not preserve all event detail.
+Keep the raw ETL/ETL.ZIP. Exported reports do not preserve all event detail.[^perfview]
 
 ## Visual Studio Profiler
 
-Use Visual Studio Performance Profiler for interactive development scenarios requiring CPU Usage, Instrumentation, Memory Usage, .NET Object Allocation Tracking, File I/O, Database, or UI tools available for the target project type.
+Use Visual Studio Performance Profiler for interactive development scenarios requiring CPU Usage, Instrumentation, Memory Usage, .NET Object Allocation Tracking, File I/O, Database, or UI tools available for the target project type.[^vs-profiler]
 
 Profile a Release/published build without the debugger unless debugger behavior is the subject. Record whether instrumentation or sampling was used because overhead and interpretation differ.
 
@@ -113,7 +112,7 @@ Configure symbols before trusting native stacks:
 - matching binaries and build IDs;
 - source indexing/source-link where available.
 
-Use a local symbol cache. Never upload proprietary symbols or dumps to public services unintentionally.
+Use a local symbol cache. Never upload proprietary symbols or dumps to public services unintentionally.[^symbols]
 
 ## Native heap and total memory
 
@@ -141,7 +140,7 @@ Do not enable invasive heap instrumentation broadly in production without testin
 
 ## WinDbg and SOS
 
-Use WinDbg when native and managed state must be analyzed together.
+Use WinDbg when native and managed state must be analyzed together.[^windbg][^sos]
 
 Typical setup:
 
@@ -200,22 +199,23 @@ Use PresentMon for independent frame/presentation evidence. Query installed help
 PresentMon.exe --help
 ```
 
-A common collection shape is:
+A current bounded collection shape is:
 
 ```powershell
 PresentMon.exe `
   --process_id <PID> `
   --timed 30 `
+  --terminate_after_timed `
   --output_file artifacts\performance\windows\presentmon.csv
 ```
 
-Verify options against the installed version. Analyze frame intervals, present mode, display latency fields where available, dropped/missed frames, and process selection.
+Verify options against the installed release. `--timed` limits capture duration, while `--terminate_after_timed` exits the console application after the timed capture. Analyze frame intervals, present mode, display latency fields where available, dropped/missed frames, and process selection.[^presentmon]
 
 PresentMon does not identify shader or pass cost. Correlate with PIX/GPUView and application markers.
 
 ## GPUView
 
-Use GPUView for system-wide DXGKrnl scheduling and multi-process graphics interference. Capture with the supported WPT/GPUView logging procedure for the installed kit, then inspect:
+Use GPUView for system-wide DXGKrnl scheduling and multi-process graphics interference. Capture with the logging procedure shipped with the installed Windows Performance Toolkit—commonly the GPUView `Log.cmd` scripts—then inspect:[^gpuview]
 
 - contexts, queues, packets, and hardware queues;
 - CPU submissions and GPU execution;
@@ -230,7 +230,7 @@ GPUView is timeline/scheduling oriented. Use PIX or vendor profilers for detaile
 
 ## PIX
 
-Use PIX Timing Captures for multi-frame CPU/GPU timelines and PIX GPU Captures for one representative Direct3D 12 frame.
+Use PIX Timing Captures for multi-frame CPU/GPU timelines and PIX GPU Captures for one representative Direct3D 12 frame.[^pix]
 
 Timing Capture questions:
 
@@ -273,7 +273,7 @@ Stable process working set does not imply stable video-memory residency, and vid
 
 ## ETW custom instrumentation
 
-Use `EventSource`, `Activity`, or native ETW providers for stable operation/frame markers. Include operation ID, phase, object/document/frame ID, queue, and outcome. Avoid high-cardinality payloads and secrets.
+Use `EventSource`, `Activity`, or native ETW providers for stable operation/frame markers. Include operation ID, phase, object/document/frame ID, queue, and outcome. Avoid high-cardinality payloads and secrets.[^eventsource][^activity]
 
 Correlate custom events with PerfView/WPA timelines, runtime events, disk/network, GPU, and present.
 
@@ -291,3 +291,19 @@ Correlate custom events with PerfView/WPA timelines, runtime events, disk/networ
 ## Validation
 
 Repeat with the same Windows build, driver, power plan, adapter, display/refresh rate, process architecture, package model, workload, WPR profile, symbol configuration, and capture duration. Report CPU, ready/wait time, I/O, managed/native memory, present/frame metrics, GPU timings, and collection overhead.
+
+## Documentation footnotes
+
+[^command-reference]: [`../command-reference.md`](../command-reference.md).
+[^wpr]: Microsoft, [Windows Performance Recorder](https://learn.microsoft.com/windows-hardware/test/wpt/windows-performance-recorder).
+[^wpa]: Microsoft, [Windows Performance Analyzer](https://learn.microsoft.com/windows-hardware/test/wpt/windows-performance-analyzer).
+[^perfview]: Microsoft, [PerfView](https://github.com/microsoft/perfview).
+[^vs-profiler]: Microsoft, [Visual Studio profiling tools](https://learn.microsoft.com/visualstudio/profiling/).
+[^symbols]: Microsoft, [symbol path for Windows debuggers](https://learn.microsoft.com/windows-hardware/drivers/debugger/symbol-path).
+[^windbg]: Microsoft, [WinDbg documentation](https://learn.microsoft.com/windows-hardware/drivers/debugger/).
+[^sos]: Microsoft, [SOS debugging extension](https://learn.microsoft.com/dotnet/core/diagnostics/sos-debugging-extension).
+[^presentmon]: GameTechDev, [PresentMon console application](https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md).
+[^gpuview]: Microsoft, [using GPUView](https://learn.microsoft.com/windows-hardware/drivers/display/using-gpuview).
+[^pix]: Microsoft, [PIX on Windows](https://devblogs.microsoft.com/pix/).
+[^eventsource]: Microsoft, [`EventSource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.tracing.eventsource).
+[^activity]: Microsoft, [`Activity`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activity).
