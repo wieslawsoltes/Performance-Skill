@@ -8,6 +8,7 @@ The repository exposes one installable skill through [`SKILL.md`](./SKILL.md). D
 SKILL.md
 references/
   index.md
+  command-reference.md
   core/
     index.md
     guide.md
@@ -41,7 +42,7 @@ scripts/
   validate-skill.py
 ```
 
-Each `index.md` is a compact router. The detailed guides preserve operational procedures and are loaded only when the investigation crosses that domain or platform boundary.
+Each `index.md` is a compact router. The detailed guides preserve operational procedures and are loaded only when the investigation crosses that domain or platform boundary. [`references/command-reference.md`](references/command-reference.md) is the authoritative command-syntax layer and contains official documentation footnotes.[^command-reference]
 
 ## Coverage
 
@@ -66,6 +67,18 @@ Copy or link this repository into the skills directory used by your coding agent
 
 Keep the complete `references` directory beside `SKILL.md` so relative links remain valid.
 
+## Command correctness policy
+
+Before executing a documented command:
+
+1. read [`references/command-reference.md`](references/command-reference.md);
+2. record the installed tool version;
+3. query the tool's `--help`, profiles, templates, or supported capabilities;
+4. preserve the exact command beside the raw artifact;
+5. prefer primary documentation linked through the footnotes.
+
+The command audit specifically corrects current `dotnet-trace` profile names, positional `xctrace export` syntax, `perf sched` subcommand semantics, PresentMon options, BenchmarkDotNet runtime constants, and distribution-dependent BCC command names.[^dotnet-trace][^xctrace][^perf-sched][^presentmon][^benchmarkdotnet][^bcc]
+
 ## Validation
 
 Run the repository validator after structural or documentation changes:
@@ -74,7 +87,7 @@ Run the repository validator after structural or documentation changes:
 python3 scripts/validate-skill.py
 ```
 
-It checks the single-skill contract, front matter, relative Markdown links, stale legacy paths, missing domain indexes/guides, and common command-profile regressions.
+It checks the single-skill contract, front matter, relative Markdown links, stale legacy paths, missing domain indexes/guides, documentation-footnote coverage, and common command-profile regressions.
 
 ## Example prompts
 
@@ -114,8 +127,18 @@ Collect bounded production evidence from this Kubernetes workload without destab
 - Explicit ownership across managed, native, kernel, scheduler, I/O, dependency, driver, GPU, compositor, and display layers.
 - Reproducible inputs, workloads, and raw artifact preservation.
 - Equivalent before/after validation with tail metrics and variance.
-- Automated structural checks for links, routing, and stale command guidance.
+- Automated structural checks for links, routing, footnotes, and stale command guidance.
 
 ## License
 
 Licensed under the [MIT License](LICENSE).
+
+## Documentation footnotes
+
+[^command-reference]: [`references/command-reference.md`](references/command-reference.md).
+[^dotnet-trace]: Microsoft, [`dotnet-trace`](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace).
+[^xctrace]: Apple/Xcode, [`xctrace(1)`](https://keith.github.io/xcode-man-pages/xctrace.1.html).
+[^perf-sched]: Linux, [`perf-sched(1)`](https://man7.org/linux/man-pages/man1/perf-sched.1.html).
+[^presentmon]: GameTechDev, [PresentMon console application](https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md).
+[^benchmarkdotnet]: BenchmarkDotNet, [official documentation](https://benchmarkdotnet.org/).
+[^bcc]: iovisor, [BCC](https://github.com/iovisor/bcc).
