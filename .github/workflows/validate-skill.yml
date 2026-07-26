@@ -1,0 +1,19 @@
+name: Validate skill
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - feature/cross-platform-dotnet-performance-skill
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate package structure, links, footnotes, and commands
+        run: python3 scripts/validate-skill.py
