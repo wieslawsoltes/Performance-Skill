@@ -23,7 +23,7 @@ This repository defines one skill. `SKILL.md` is the policy and routing entry po
 - Do not claim a fix from one average, one trace, one frame capture, one microbenchmark, or the fastest benchmark run.
 - Preserve raw artifacts and report missing symbols, dropped events, profiler overhead, environmental variance, and uncertainty.
 - Protect secrets and personal data in dumps, traces, logs, SQL spans, packet captures, and benchmark input corpora.
-- Treat command examples as version-sensitive. Query installed tool help and prefer current official profile names and options.
+- Treat command examples as version-sensitive. Query installed tool help and use [`references/command-reference.md`](references/command-reference.md) as the authoritative syntax layer.[^command-reference]
 
 ## Required investigation output
 
@@ -43,7 +43,7 @@ Never claim an improvement without before/after evidence from an equivalent work
 
 ## Reference router
 
-Always begin with [`references/index.md`](references/index.md) and [`references/core/index.md`](references/core/index.md).
+Always begin with [`references/index.md`](references/index.md), [`references/core/index.md`](references/core/index.md), and the verified [`references/command-reference.md`](references/command-reference.md).
 
 Load additional domain indexes by question:
 
@@ -95,7 +95,7 @@ Do not load every document by default. Select the minimum set that answers the c
 - Inspect repository build, deployment, diagnostics, benchmark projects, input corpora, CI, and artifact conventions.
 - Create `artifacts/performance/<issue-or-timestamp>/` or the repository equivalent.
 - Add a deterministic workload driver and stable markers when absent.
-- Store commands, environment metadata, and analyzer/tool versions beside artifacts.
+- Store commands, environment metadata, analyzer/tool versions, and official reference links beside artifacts.
 - Analyze inclusive costs first, then exclusive costs, callees, waits, queueing, synchronization, and ownership.
 - Modify code only after the dominant cause is supported.
 - Add a benchmark, regression budget, telemetry marker, trace recipe, or lifetime invariant that prevents recurrence.
@@ -118,3 +118,7 @@ Do not load every document by default. Select the minimum set that answers the c
 - “A microbenchmark improvement proves application improvement.”
 - “A statistically detectable delta is automatically product-significant.”
 - “One benchmark run proves the result.”
+
+## Documentation footnotes
+
+[^command-reference]: [`references/command-reference.md`](references/command-reference.md), which links to the current official documentation for the .NET diagnostic tools, BenchmarkDotNet, Xcode Instruments, Windows Performance Toolkit, Linux `perf`/BCC, PresentMon, RenderDoc, and vendor GPU profilers.
