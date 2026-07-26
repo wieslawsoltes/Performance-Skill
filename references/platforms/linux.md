@@ -1,6 +1,6 @@
 # Linux profiling with `perf`, `dotnet-trace collect-linux`, eBPF, procfs, allocator tools, and GPU profilers
 
-Use this reference for native and managed CPU, kernel activity, scheduling, off-CPU time, hardware counters, memory ownership, I/O, containers, Vulkan/OpenGL/WebGPU, compositor, and driver behavior.
+Use this reference for native and managed CPU, kernel activity, scheduling, off-CPU time, hardware counters, memory ownership, I/O, containers, Vulkan/OpenGL/WebGPU, compositor, and driver behavior. Consult the verified [`../command-reference.md`](../command-reference.md) before copying commands.[^command-reference]
 
 ## Environment capture
 
@@ -67,13 +67,13 @@ sudo perf script -i artifacts/performance/linux/cpu.data \
   > artifacts/performance/linux/cpu.script
 ```
 
-The best unwind mode depends on frame pointers, DWARF data, binary stripping, JIT maps, architecture, and overhead. Compare `dwarf`, `fp`, and defaults where necessary. Reject traces dominated by broken or anonymous stacks.
+The best unwind mode depends on frame pointers, DWARF data, binary stripping, JIT maps, architecture, and overhead. Compare `dwarf`, `fp`, and defaults where necessary. Reject traces dominated by broken or anonymous stacks.[^perf-record]
 
 ## Managed JIT symbols
 
 Use the runtime-supported perf-map/perf-jit mechanism for the deployed .NET version. Record any environment variables enabled before process start. Verify that managed method names appear correctly in `perf report` before drawing method-level conclusions.
 
-Correlate with `dotnet-trace` when symbol quality is incomplete. Native `perf` sees application/native/runtime/kernel frames; EventPipe is usually better for managed semantic attribution.
+Correlate with `dotnet-trace` when symbol quality is incomplete. Native `perf` sees application/native/runtime/kernel frames; EventPipe is usually better for managed semantic attribution.[^dotnet-trace]
 
 ## `dotnet-trace collect-linux` on supported .NET/Linux
 
@@ -103,7 +103,7 @@ Inspect current help and profiles:
 dotnet-trace collect-linux --help
 ```
 
-This feature and trace format support evolve. Record tool/runtime versions and verify the analyzer can open the produced trace.
+This feature and trace format support evolve. Record tool/runtime versions and verify the analyzer can open the produced trace.[^dotnet-trace]
 
 ## Hardware counters with `perf stat`
 
@@ -116,7 +116,7 @@ sudo perf stat \
 
 Useful derived observations include instructions per cycle, branch-miss rate, cache-miss rate, context-switch rate, and page faults. Interpret relative to CPU model, counter multiplexing, virtualization, frequency scaling, and workload phase.
 
-Use repeated equivalent runs. Counter values from different microarchitectures are not directly interchangeable.
+Use repeated equivalent runs. Counter values from different microarchitectures are not directly interchangeable.[^perf-stat]
 
 ## Scheduler and off-CPU analysis
 
@@ -129,26 +129,34 @@ vmstat 1
 mpstat -P ALL 1
 ```
 
-Use `perf sched` where suitable:
+`perf sched record` is command-oriented. Capture a bounded system-wide scheduler trace, then filter during analysis where the installed subcommand supports it:
 
 ```bash
-sudo perf sched record -p <PID> -- sleep 30
-sudo perf sched timehist
+sudo perf sched record -- sleep 30
+sudo perf sched timehist -p <PID>
 sudo perf sched latency
 ```
 
-Depending on kernel/tool version, filtering and command syntax vary; inspect `perf sched --help`.
-
-Use BCC/bpftrace off-CPU tools when available:
+The options and PID semantics differ between `record`, `timehist`, `map`, and `latency`. Inspect each installed subcommand before use:
 
 ```bash
-sudo offcputime-bpfcc -p <PID> 30 \
-  > artifacts/performance/linux/offcpu.txt
-sudo runqlat-bpfcc 30 \
-  > artifacts/performance/linux/runqlat.txt
+perf sched record --help
+perf sched timehist --help
+perf sched latency --help
 ```
 
-Command names vary by distribution (`offcputime`, `offcputime-bpfcc`, etc.). Check installed tools.
+Do not use `perf sched record -p <PID>` as a portable documented form.[^perf-sched]
+
+Use BCC/bpftrace off-CPU and run-queue tools when installed. Distribution packages rename wrappers and expose different options, so discover the exact executables and help first:
+
+```bash
+command -v offcputime-bpfcc || command -v offcputime || true
+command -v runqlat-bpfcc || command -v runqlat || true
+offcputime-bpfcc --help 2>/dev/null || offcputime --help
+runqlat-bpfcc --help 2>/dev/null || runqlat --help
+```
+
+Invoke the discovered tool with the PID, duration, interval, or count flags documented by that installed version and redirect the output into `artifacts/performance/linux/`. Do not assume a positional `30` means a 30-second bounded run.[^bcc]
 
 Correlate:
 
@@ -176,7 +184,7 @@ When installed and permitted:
 - `funclatency`: selected native function latency;
 - `memleak`: supported native allocation paths.
 
-Check BTF, kernel config, lockdown mode, privileges, seccomp, and container capabilities. Validate stack symbolization and probe safety.
+Check BTF, kernel config, lockdown mode, privileges, seccomp, and container capabilities. Validate stack symbolization and probe safety.[^bcc][^bpftrace]
 
 ## Procfs memory snapshots
 
@@ -208,7 +216,7 @@ Interpret:
 - native heaps and allocator arenas;
 - graphics/driver mappings.
 
-A large VMA is not a leak unless committed/resident/private usage or mapping count grows without bound.
+A large VMA is not a leak unless committed/resident/private usage or mapping count grows without bound.[^proc]
 
 ## Native heap: heaptrack
 
@@ -224,7 +232,7 @@ Attach where supported by the installed version:
 heaptrack --pid <PID>
 ```
 
-Analyze with `heaptrack_gui` or command-line tools. Inspect leaked/peak/temporary allocation bytes and allocation stacks. The profiler can add substantial overhead; compare behavior without it.
+Analyze with `heaptrack_gui` or command-line tools. Inspect leaked/peak/temporary allocation bytes and allocation stacks. The profiler can add substantial overhead; compare behavior without it.[^heaptrack]
 
 ## Valgrind
 
@@ -242,7 +250,7 @@ For memory errors/leaks:
 valgrind --tool=memcheck --leak-check=full ./App
 ```
 
-Managed/JIT runtimes and native dependencies can produce complex reports. Use suppressions carefully and do not treat every reachable block as a leak.
+Managed/JIT runtimes and native dependencies can produce complex reports. Use suppressions carefully and do not treat every reachable block as a leak.[^valgrind]
 
 ## Allocator-specific profiling
 
@@ -261,7 +269,7 @@ Use eBPF tools for latency and stack correlation. Use `strace` only for narrow s
 strace -ff -ttT -p <PID> -o artifacts/performance/linux/strace
 ```
 
-Prefer `perf trace` or eBPF for lower-overhead system-wide analysis where available.
+Prefer `perf trace` or eBPF for lower-overhead system-wide analysis where available.[^strace]
 
 Inspect synchronous calls on hot threads, metadata storms, small fragmented I/O, fsync frequency, page faults, network filesystems, and container overlay filesystems.
 
@@ -292,7 +300,7 @@ cat /sys/fs/cgroup/memory.events 2>/dev/null || true
 
 Depending on environment, profiling may require `CAP_PERFMON`, `CAP_SYS_PTRACE`, relaxed seccomp, shared PID namespace, tracefs access, and GPU device mounts. Do not default to privileged containers.
 
-Interpret CPU percentage against quota/cpuset and memory against cgroup limits. Profiler overhead competes inside those limits.
+Interpret CPU percentage against quota/cpuset and memory against cgroup limits. Profiler overhead competes inside those limits.[^cgroup]
 
 ## GPU and presentation discovery
 
@@ -317,7 +325,7 @@ Inspect:
 - shader inputs/outputs;
 - overdraw and mesh/texture inspection.
 
-RenderDoc is not a long-duration scheduler or presentation profiler. Pair it with timestamps, `perf`, compositor traces, and vendor tools.
+RenderDoc is not a long-duration scheduler or presentation profiler. Pair it with timestamps, `perf`, compositor traces, and vendor tools.[^renderdoc]
 
 ## Vendor GPU tools
 
@@ -331,7 +339,7 @@ Use the tool matching the actual adapter:
 - Intel Graphics Performance Analyzers;
 - Mesa/driver-specific tools and counters where supported.
 
-Record tool, driver, firmware, and GPU versions. Counter names and interpretation are architecture-specific.
+Record tool, driver, firmware, and GPU versions. Counter names and interpretation are architecture-specific.[^nsight][^rgp][^rmv][^intel-gpa]
 
 ## Wayland/X11 compositor and present
 
@@ -368,3 +376,23 @@ Use distribution debuginfo packages and configured symbol/debuginfod services ac
 ## Validation
 
 Repeat with the same kernel, libc, runtime, CPU governor, cgroup limits, adapter/driver, display server/compositor, resolution, refresh rate, present mode, workload, symbol setup, and profiler configuration. Report managed/native/kernel CPU, on/off-CPU time, counters, I/O, RSS/PSS/private memory, GPU/present timing, and profiler overhead.
+
+## Documentation footnotes
+
+[^command-reference]: [`../command-reference.md`](../command-reference.md).
+[^perf-record]: Linux, [`perf-record(1)`](https://man7.org/linux/man-pages/man1/perf-record.1.html).
+[^perf-stat]: Linux, [`perf-stat(1)`](https://man7.org/linux/man-pages/man1/perf-stat.1.html).
+[^perf-sched]: Linux, [`perf-sched(1)`](https://man7.org/linux/man-pages/man1/perf-sched.1.html).
+[^dotnet-trace]: Microsoft, [`dotnet-trace`](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace).
+[^bcc]: iovisor, [BCC tools](https://github.com/iovisor/bcc).
+[^bpftrace]: bpftrace, [reference guide](https://bpftrace.org/docs/release_024/language).
+[^proc]: Linux, [`proc(5)`](https://man7.org/linux/man-pages/man5/proc.5.html).
+[^heaptrack]: KDE, [heaptrack](https://github.com/KDE/heaptrack).
+[^valgrind]: Valgrind, [manual](https://valgrind.org/docs/manual/manual.html).
+[^strace]: strace, [manual](https://man7.org/linux/man-pages/man1/strace.1.html).
+[^cgroup]: Linux kernel, [cgroup v2](https://docs.kernel.org/admin-guide/cgroup-v2.html).
+[^renderdoc]: RenderDoc, [documentation](https://renderdoc.org/docs/).
+[^nsight]: NVIDIA, [developer tools overview](https://developer.nvidia.com/tools-overview).
+[^rgp]: AMD, [Radeon GPU Profiler](https://gpuopen.com/rgp/).
+[^rmv]: AMD, [Radeon Memory Visualizer](https://gpuopen.com/rmv/).
+[^intel-gpa]: Intel, [Graphics Performance Analyzers](https://www.intel.com/content/www/us/en/developer/tools/graphics-performance-analyzers/overview.html).
