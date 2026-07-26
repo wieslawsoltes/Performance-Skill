@@ -1,6 +1,6 @@
 # Startup and deployment
 
-Use [`guide.md`](guide.md) for cold start, first request/frame/action, loader behavior, JIT, ReadyToRun, trimming, single-file deployment, NativeAOT, publish size, and deferred first-use regressions.
+Use [`guide.md`](guide.md) for cold start, first request/frame/action, loader behavior, JIT, ReadyToRun, trimming, single-file deployment, NativeAOT, publish size, and deferred first-use regressions. Consult [`../command-reference.md`](../command-reference.md) before executing publish or profiler commands.[^command-reference]
 
 ## Review guardrails
 
@@ -12,3 +12,13 @@ Use [`guide.md`](guide.md) for cold start, first request/frame/action, loader be
 - Validate compatibility, diagnostics, code size, memory, throughput, and steady-state performance alongside startup.
 
 Pair this guide with [`../runtime/index.md`](../runtime/index.md), [`../benchmarking/index.md`](../benchmarking/index.md), and the relevant [`../platforms/index.md`](../platforms/index.md) documents.
+
+## Documentation footnotes
+
+[^command-reference]: [`../command-reference.md`](../command-reference.md).
+[^publish]: Microsoft, [`dotnet publish`](https://learn.microsoft.com/dotnet/core/tools/dotnet-publish).
+[^r2r]: Microsoft, [ReadyToRun deployment](https://learn.microsoft.com/dotnet/core/deploying/ready-to-run).
+[^single-file]: Microsoft, [single-file deployment](https://learn.microsoft.com/dotnet/core/deploying/single-file/overview).
+[^trimming]: Microsoft, [trim self-contained deployments](https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained).
+[^nativeaot]: Microsoft, [Native AOT deployment](https://learn.microsoft.com/dotnet/core/deploying/native-aot/).
+[^dotnet-trace]: Microsoft, [`dotnet-trace`](https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace).
