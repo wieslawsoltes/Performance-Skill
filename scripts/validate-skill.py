@@ -106,9 +106,12 @@ def validate_front_matter(errors: list[str]) -> None:
         fail(errors, "SKILL.md has malformed YAML front matter delimiters")
         return
 
-    for field in ("name:", "summary:", "description:"):
+    for field in ("name:", "description:"):
         if field not in front_matter:
             fail(errors, f"SKILL.md front matter is missing {field[:-1]}")
+
+    if "summary:" in front_matter:
+        fail(errors, "SKILL.md front matter contains unsupported summary field")
 
 
 def validate_required_files(errors: list[str]) -> None:
@@ -170,8 +173,6 @@ def validate_command_regressions(errors: list[str]) -> None:
             "removed standard dotnet-trace cpu-sampling profile",
         r"xcrun\s+xctrace\s+version\b":
             "undocumented xctrace version subcommand; use xcodebuild -version and xctrace help",
-        r"xcrun\s+xctrace\s+export[\s\\\r\n]+--input\b":
-            "invalid xctrace export --input form; trace path is positional",
         r"perf\s+sched\s+record[\s\\\r\n]+-p\b":
             "non-portable perf sched record -p form",
         r"CoreRuntime\.Core100\b":
@@ -191,6 +192,24 @@ def validate_command_regressions(errors: list[str]) -> None:
 
         if "No license file currently exists" in text:
             fail(errors, f"stale license statement in {relative}")
+
+    command_reference = (
+        ROOT / "references" / "command-reference.md"
+    ).read_text(encoding="utf-8")
+    required_xctrace_guidance = (
+        "xcrun xctrace help record",
+        "xcrun xctrace help export",
+        "--launch -- ./App",
+        "--input artifacts/performance/macos/cpu.trace",
+        "scripts/xctrace-export.py",
+    )
+    for required in required_xctrace_guidance:
+        if required not in command_reference:
+            fail(
+                errors,
+                "missing version-adaptive xctrace guidance in "
+                f"references/command-reference.md: {required}",
+            )
 
 
 def validate_text_hygiene(errors: list[str]) -> None:

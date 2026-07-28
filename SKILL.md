@@ -1,6 +1,5 @@
 ---
 name: dotnet-performance
-summary: Diagnose CPU, memory, allocation, GC, contention, startup, I/O, native interop, UI, rendering, GPU, benchmarking, and production performance problems in .NET applications across macOS, Windows, and Linux.
 description: Evidence-first performance engineering workflow for coding agents combining portable .NET diagnostics with platform-native profiling, BenchmarkDotNet, application benchmarking, statistical validation, deployment, container, graphics, and GPU procedures.
 ---
 
@@ -23,7 +22,10 @@ This repository defines one skill. `SKILL.md` is the policy and routing entry po
 - Do not claim a fix from one average, one trace, one frame capture, one microbenchmark, or the fastest benchmark run.
 - Preserve raw artifacts and report missing symbols, dropped events, profiler overhead, environmental variance, and uncertainty.
 - Protect secrets and personal data in dumps, traces, logs, SQL spans, packet captures, and benchmark input corpora.
-- Treat command examples as version-sensitive. Query installed tool help and use [`references/command-reference.md`](references/command-reference.md) as the authoritative syntax layer.[^command-reference]
+- Treat command examples as version-sensitive. Query installed tool help first; it
+  overrides examples when syntax differs. Use
+  [`references/command-reference.md`](references/command-reference.md) for verified
+  selection rules and canonical forms.[^command-reference]
 
 ## Required investigation output
 

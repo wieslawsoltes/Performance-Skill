@@ -2,7 +2,11 @@
 
 Use this file as the package-level reference router. Begin with [`core/index.md`](core/index.md), then load only the domains and platforms required by the current hypothesis.
 
-Before copying any shell or PowerShell command, consult the authoritative [`command-reference.md`](command-reference.md). It records verified canonical forms, known version-sensitive syntax, and official documentation footnotes.[^command-reference]
+Before copying any shell or PowerShell command, consult
+[`command-reference.md`](command-reference.md). It records verified selection rules,
+canonical forms, known version-sensitive syntax, and official documentation
+footnotes. Installed tool help remains authoritative when a released tool differs
+from an example.[^command-reference]
 
 ## Domains
 
@@ -33,7 +37,11 @@ Current important corrections:
 
 - standard `dotnet-trace collect` uses `dotnet-sampled-thread-time` for managed stack sampling; the historical standard `cpu-sampling` profile was removed;
 - `cpu-sampling` remains valid for the separate Linux `collect-linux` perf-based workflow;
-- `xctrace export` takes the trace path as a positional argument;
+- `xctrace record` launch mode uses `--launch -- command [arguments]` on current
+  Xcode releases;
+- `xctrace export` input syntax varies by Xcode release; inspect
+  `xcrun xctrace help export` and use either `--input <file>` or the positional trace
+  form it documents;
 - portable scheduler recording uses `perf sched record -- <command>`, with PID filtering performed by the analysis subcommand where supported.
 
 ## Documentation footnotes

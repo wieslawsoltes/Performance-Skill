@@ -11,6 +11,8 @@ uname -m
 xcode-select -p
 xcodebuild -version
 xcrun xctrace help
+xcrun xctrace help record
+xcrun xctrace help export
 system_profiler SPHardwareDataType SPDisplaysDataType
 ```
 
@@ -40,7 +42,7 @@ xcrun xctrace record \
   --template "Time Profiler" \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch ./App
+  --launch -- ./App
 ```
 
 Framework-dependent executable:
@@ -50,10 +52,15 @@ xcrun xctrace record \
   --template "Time Profiler" \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch dotnet exec ./App.dll
+  --launch -- dotnet exec ./App.dll
 ```
 
 For an `.app` bundle, launch the actual bundle executable or use Instruments interactively when bundle environment, entitlements, or activation behavior matters.
+
+Use repeated `--env NAME=value` options for a launched deterministic workload and
+`--target-stdout <path>` to preserve its benchmark output beside the trace. The
+`--env` and target-stream options are launch-only and must appear before
+`--launch --`.
 
 ## Time Profiler: attach
 
@@ -140,7 +147,7 @@ xcrun xctrace record \
   --template "Allocations" \
   --time-limit 60s \
   --output artifacts/performance/macos/allocations.trace \
-  --launch ./App
+  --launch -- ./App
 ```
 
 Attach:
@@ -165,6 +172,23 @@ Use generation marks/snapshots around warm-up and repeated workload. Analyze:
 
 Instruments generally sees GC segments and native runtime allocations, not every managed object. Use GC dumps for managed type retention.
 
+If `xcrun xctrace help record` and the installed Instruments package expose it, add
+VM Tracker to the Allocations recording:
+
+```bash
+xcrun xctrace record \
+  --template "Allocations" \
+  --instrument "VM Tracker" \
+  --time-limit 60s \
+  --output artifacts/performance/macos/allocations-vm.trace \
+  --launch -- ./App
+```
+
+Allocation and VM instrumentation can slow the workload enough to hit the trace time
+limit before a fixed-frame benchmark completes. Compare equivalent trace windows or
+increase the limit; do not compare a completed unprofiled result with a truncated
+profiled result.
+
 ## Leaks and ownership
 
 Use the installed Leaks template when native leak detection is appropriate:
@@ -174,7 +198,7 @@ xcrun xctrace record \
   --template "Leaks" \
   --time-limit 60s \
   --output artifacts/performance/macos/leaks.trace \
-  --launch ./App
+  --launch -- ./App
 ```
 
 Treat reported leaks as candidates. Verify application ownership, framework caches, one-time initialization, process shutdown behavior, and whether the allocation remains reachable intentionally.
@@ -240,7 +264,7 @@ xcrun xctrace record \
   --template "Metal System Trace" \
   --time-limit 30s \
   --output artifacts/performance/macos/metal-system.trace \
-  --launch ./App
+  --launch -- ./App
 ```
 
 Inspect:
@@ -272,17 +296,38 @@ Verify architecture and UUID match before trusting symbolized stacks. Managed JI
 
 ## Export and automation
 
-`xctrace export` can export tables or the table of contents from trace files. Inspect the installed help and trace schema:
+`xctrace export` can export tables or the table of contents from trace files. Its
+input syntax varies by Xcode release, so inspect installed help first:
 
 ```bash
 xcrun xctrace help export
 xcrun xctrace export \
+  --input artifacts/performance/macos/cpu.trace \
+  --toc \
+  --output artifacts/performance/macos/cpu-toc.xml
+```
+
+The example above is correct when help lists `--input <file>`. If help documents a
+positional trace instead, use that form. The bundled
+`scripts/xctrace-export.py` wrapper detects either syntax:
+
+```bash
+python3 scripts/xctrace-export.py \
   artifacts/performance/macos/cpu.trace \
   --toc \
   --output artifacts/performance/macos/cpu-toc.xml
 ```
 
-The trace path is positional. Do not use an undocumented `--input` option. Do not hard-code XPath/table assumptions across Xcode versions. Store the raw `.trace` bundle as the source artifact.[^xctrace]
+Export the table of contents first, then export only the required schemas. Large
+Metal tables can take substantial time and storage; export them sequentially, wait
+for completion, and reject empty partial outputs. Do not hard-code XPath/table
+assumptions across Xcode versions. Store the raw `.trace` bundle as the source
+artifact.[^xctrace]
+
+When a time limit terminates the target, `xctrace` may return nonzero after still
+saving a valid trace. Verify the trace bundle, table of contents, target exit status,
+end reason, and captured workload phase before deciding whether the capture is
+usable.
 
 ## Common macOS misdiagnoses
 

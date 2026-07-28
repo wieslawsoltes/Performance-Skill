@@ -40,6 +40,7 @@ references/
     linux.md
 scripts/
   validate-skill.py
+  xctrace-export.py
 ```
 
 Each `index.md` is a compact router. The detailed guides preserve operational procedures and are loaded only when the investigation crosses that domain or platform boundary. [`references/command-reference.md`](references/command-reference.md) is the authoritative command-syntax layer and contains official documentation footnotes.[^command-reference]
@@ -77,7 +78,10 @@ Before executing a documented command:
 4. preserve the exact command beside the raw artifact;
 5. prefer primary documentation linked through the footnotes.
 
-The command audit specifically corrects current `dotnet-trace` profile names, positional `xctrace export` syntax, `perf sched` subcommand semantics, PresentMon options, BenchmarkDotNet runtime constants, and distribution-dependent BCC command names.[^dotnet-trace][^xctrace][^perf-sched][^presentmon][^benchmarkdotnet][^bcc]
+The command audit specifically corrects current `dotnet-trace` profile names,
+version-dependent `xctrace export` input syntax, `xctrace record` launch separators,
+`perf sched` subcommand semantics, PresentMon options, BenchmarkDotNet runtime
+constants, and distribution-dependent BCC command names.[^dotnet-trace][^xctrace][^perf-sched][^presentmon][^benchmarkdotnet][^bcc]
 
 ## Validation
 

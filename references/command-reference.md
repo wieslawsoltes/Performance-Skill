@@ -67,6 +67,8 @@ Discover capabilities first:
 ```bash
 xcodebuild -version
 xcrun xctrace help
+xcrun xctrace help record
+xcrun xctrace help export
 xcrun xctrace list templates
 xcrun xctrace list devices
 ```
@@ -78,7 +80,7 @@ xcrun xctrace record \
   --template 'Time Profiler' \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch ./App
+  --launch -- ./App
 ```
 
 ```bash
@@ -89,16 +91,21 @@ xcrun xctrace record \
   --output artifacts/performance/macos/cpu.trace
 ```
 
-`xctrace export` takes the trace file as a positional argument; do not use a non-documented `--input` option:
+`xctrace export` changed input syntax across Xcode releases. If
+`xcrun xctrace help export` lists `--input <file>`, use:
 
 ```bash
 xcrun xctrace export \
-  artifacts/performance/macos/cpu.trace \
+  --input artifacts/performance/macos/cpu.trace \
   --toc \
   --output artifacts/performance/macos/cpu-toc.xml
 ```
 
-Template names vary by Xcode installation and output paths generally must not already exist.[^xctrace]
+If the installed help instead documents a positional trace, place the trace path
+immediately after `export`. Prefer `scripts/xctrace-export.py` when this skill is
+available locally; it detects the installed form before executing. Template and
+instrument names vary by installation, and output paths generally must not already
+exist.[^xctrace]
 
 ## Windows Performance Toolkit and graphics tools
 
