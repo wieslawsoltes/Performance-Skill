@@ -83,6 +83,23 @@ xcrun xctrace record \
   --launch -- ./App
 ```
 
+Framework-dependent launch:
+
+```bash
+dotnet_host="$(command -v dotnet)"
+test -x "$dotnet_host"
+xcrun xctrace record \
+  --template 'Time Profiler' \
+  --time-limit 30s \
+  --output artifacts/performance/macos/dotnet-cpu.trace \
+  --launch -- "$dotnet_host" exec ./App.dll
+```
+
+`xctrace` launch targets are not guaranteed to be resolved through the invoking
+shell's `PATH`. Resolve command-line hosts such as `dotnet` first and pass the
+absolute executable path. A failed launch can still leave a trace bundle, so verify
+run issues, target output, and the expected workload result before accepting it.
+
 ```bash
 xcrun xctrace record \
   --template 'Time Profiler' \

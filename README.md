@@ -80,8 +80,9 @@ Before executing a documented command:
 
 The command audit specifically corrects current `dotnet-trace` profile names,
 version-dependent `xctrace export` input syntax, `xctrace record` launch separators,
-`perf sched` subcommand semantics, PresentMon options, BenchmarkDotNet runtime
-constants, and distribution-dependent BCC command names.[^dotnet-trace][^xctrace][^perf-sched][^presentmon][^benchmarkdotnet][^bcc]
+absolute launch-target resolution, `perf sched` subcommand semantics, PresentMon
+options, BenchmarkDotNet runtime constants, and distribution-dependent BCC command
+names.[^dotnet-trace][^xctrace][^perf-sched][^presentmon][^benchmarkdotnet][^bcc]
 
 ## Validation
 

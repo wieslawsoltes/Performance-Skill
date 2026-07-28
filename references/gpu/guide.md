@@ -199,11 +199,13 @@ xcrun xctrace record \
 For a framework-dependent .NET app:
 
 ```bash
+dotnet_host="$(command -v dotnet)"
+test -x "$dotnet_host"
 xcrun xctrace record \
   --template "Metal System Trace" \
   --time-limit 30s \
   --output artifacts/gpu/metal-system.trace \
-  --launch -- dotnet exec ./App.dll
+  --launch -- "$dotnet_host" exec ./App.dll
 ```
 
 Attach to an existing process:

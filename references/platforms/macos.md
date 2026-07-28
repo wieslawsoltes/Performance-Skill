@@ -48,12 +48,19 @@ xcrun xctrace record \
 Framework-dependent executable:
 
 ```bash
+dotnet_host="$(command -v dotnet)"
+test -x "$dotnet_host"
 xcrun xctrace record \
   --template "Time Profiler" \
   --time-limit 30s \
   --output artifacts/performance/macos/cpu.trace \
-  --launch -- dotnet exec ./App.dll
+  --launch -- "$dotnet_host" exec ./App.dll
 ```
+
+`xctrace` does not consistently resolve a launch target through the calling shell's
+`PATH`. Pass an absolute executable path for `dotnet` and other command-line hosts.
+A missing target can still produce a trace bundle containing a run issue; require
+expected target output or a completed benchmark result before accepting the trace.
 
 For an `.app` bundle, launch the actual bundle executable or use Instruments interactively when bundle environment, entitlements, or activation behavior matters.
 

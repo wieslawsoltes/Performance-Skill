@@ -173,6 +173,8 @@ def validate_command_regressions(errors: list[str]) -> None:
             "removed standard dotnet-trace cpu-sampling profile",
         r"xcrun\s+xctrace\s+version\b":
             "undocumented xctrace version subcommand; use xcodebuild -version and xctrace help",
+        r"--launch\s+--\s+dotnet\b":
+            "xctrace launch target relies on PATH; resolve the absolute dotnet host",
         r"perf\s+sched\s+record[\s\\\r\n]+-p\b":
             "non-portable perf sched record -p form",
         r"CoreRuntime\.Core100\b":
@@ -200,6 +202,8 @@ def validate_command_regressions(errors: list[str]) -> None:
         "xcrun xctrace help record",
         "xcrun xctrace help export",
         "--launch -- ./App",
+        'dotnet_host="$(command -v dotnet)"',
+        '--launch -- "$dotnet_host" exec ./App.dll',
         "--input artifacts/performance/macos/cpu.trace",
         "scripts/xctrace-export.py",
     )
